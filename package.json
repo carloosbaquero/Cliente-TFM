@@ -1,0 +1,25 @@
+{
+  "name": "cliente-tfm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carloosbaquero/Cliente-TFM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/carloosbaquero/Cliente-TFM/issues"
+  },
+  "homepage": "https://github.com/carloosbaquero/Cliente-TFM#readme",
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.1"
+  }
+}
