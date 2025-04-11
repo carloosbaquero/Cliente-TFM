@@ -6,7 +6,8 @@ const { v4: uuidv4 } = require('uuid');
 const DB_PATH = './queue/data_queue.db';
 let ws;
 let reconnectAttempts = 0;
-const MAX_RETRIES = 10;  // Número máximo de reintentos
+const BACKOFF_TIME = 1000;
+// const MAX_RETRIES = 10;  // Número máximo de reintentos
 
 // Función para conectar al WebSocket con backoff exponencial
 function connectWebSocket() {
@@ -38,15 +39,15 @@ function connectWebSocket() {
 
 // Backoff exponencial para reconexión
 function reconnectWithBackoff() {
-  if (reconnectAttempts >= MAX_RETRIES) {
-    console.error('[WS] Excedido el número máximo de reintentos');
-    return;
-  }
+  // if (reconnectAttempts >= MAX_RETRIES) {
+  //   console.error('[WS] Excedido el número máximo de reintentos');
+  //   return;
+  // }
 
-  const backoffTime = Math.pow(2, reconnectAttempts) * 1000;  // Backoff exponencial
+  // const backoffTime = Math.pow(2, reconnectAttempts) * BACKOFF_TIME;
   reconnectAttempts++;
-  console.log(`[WS] Reintentando conexión en ${backoffTime / 1000} segundos...`);
-  setTimeout(connectWebSocket, backoffTime);
+  console.log(`[WS] Reintentando conexión por ${reconnectAttempts} vez en ${BACKOFF_TIME / 1000} segundos...`);
+  setTimeout(connectWebSocket, BACKOFF_TIME);
 }
 
 connectWebSocket();  // Iniciar la conexión al backend
@@ -84,7 +85,7 @@ function enqueue(batch) {
 
 // Obtiene el siguiente lote pendiente
 function getNextPending() {
-  return db.prepare('SELECT * FROM queue ORDER BY timestamp ASC LIMIT 1').get();
+  return db.prepare('SELECT * FROM queue ORDER BY timestamp DESC LIMIT 1').get();
 }
 
 // Marca un lote como confirmado
@@ -112,9 +113,9 @@ setInterval(() => {
   const batch = generateDataBatch();
   enqueue(batch);
   console.log(`[+] Nuevo batch ${batch.id} en cola`);
-}, 5000); // cada 5s
+}, 1000); // cada 1s
 
-// Intentamos enviar cada 2 segundos
+// Intentamos enviar cada 0.5 segundos
 setInterval(() => {
   trySendNext();
-}, 2000);
+}, 500);
