@@ -1,9 +1,12 @@
-require('dotenv').config();
 const WebSocket = require('ws');
-const Database = require('better-sqlite3');
 const { v4: uuidv4 } = require('uuid');
+const db = require('./db.js');
 
-const DB_PATH = './queue/data_queue.db';
+const envFile = process.env.NODE_ENV === 'test' 
+  ? '.env.test' 
+  : '.env.development';
+require('dotenv').config({path: envFile});
+
 let ws;
 let reconnectAttempts = 0;
 const BACKOFF_TIME = 1000;
@@ -50,19 +53,6 @@ function reconnectWithBackoff() {
   setTimeout(connectWebSocket, BACKOFF_TIME);
 }
 
-connectWebSocket();  // Iniciar la conexión al backend
-
-// SQLite setup
-const db = new Database(DB_PATH);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS queue (
-    id TEXT PRIMARY KEY,
-    patientId TEXT,
-    timestamp INTEGER,
-    data TEXT
-  );
-`);
-
 // Simulación: genera un lote con 12 arrays de 200 números
 function generateDataBatch() {
   const data = Array.from({ length: 12 }, () =>
@@ -108,14 +98,25 @@ function trySendNext() {
   console.log(`[→] Enviado batch ${batch.id}`);
 }
 
-// Cada X segundos, simulamos llegada de datos y los metemos en la cola
-setInterval(() => {
-  const batch = generateDataBatch();
-  enqueue(batch);
-  console.log(`[+] Nuevo batch ${batch.id} en cola`);
-}, 1000); // cada 1s
+function start() {
+  connectWebSocket();
 
-// Intentamos enviar cada 0.5 segundos
-setInterval(() => {
-  trySendNext();
-}, 500);
+  // Cada X segundos, simulamos llegada de datos y los metemos en la cola
+  setInterval(() => {
+    const batch = generateDataBatch();
+    enqueue(batch);
+    console.log(`[+] Nuevo batch ${batch.id} en cola`);
+  }, 1000); // cada 1s
+
+  // Intentamos enviar cada 0.5 segundos
+  setInterval(() => {
+    trySendNext();
+  }, 500);
+}
+
+module.exports = {
+  generateDataBatch,
+  enqueue,
+  markAsConfirmed,
+  start
+};
