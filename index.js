@@ -118,5 +118,6 @@ module.exports = {
   generateDataBatch,
   enqueue,
   markAsConfirmed,
+  getNextPending,
   start
 };
