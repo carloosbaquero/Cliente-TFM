@@ -1,5 +1,5 @@
 require('dotenv').config({ path: '.env.test' });
-const { start, getNextPending, enqueue, generateDataBatch, stop } = require('../index.js');
+const { start, getNextPending, stop } = require('../index.js');
 const waitForExpect = require('wait-for-expect');
 const db = require('../db.js');
 
