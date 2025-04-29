@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 const db = require('./db.js');
 
-const envFile = process.env.NODE_ENV === 'test' 
+const envFile = process.env.NODE_ENV === 'TEST' 
   ? '.env.test' 
   : '.env.development';
 require('dotenv').config({path: envFile});
@@ -10,7 +10,16 @@ require('dotenv').config({path: envFile});
 let ws;
 let reconnectAttempts = 0;
 const BACKOFF_TIME = 1000;
+let dataIntervalId;
+let sendIntervalId;
 // const MAX_RETRIES = 10;  // Número máximo de reintentos
+
+function stopWebSocket() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+}
 
 // Función para conectar al WebSocket con backoff exponencial
 function connectWebSocket() {
@@ -30,8 +39,10 @@ function connectWebSocket() {
   });
 
   ws.on('close', () => {
-    console.log('[WS] Conexión cerrada. Reintentando...');
-    reconnectWithBackoff();
+    if (process.env.TEST !== 'true') {
+      console.log('[WS] Conexión cerrada. Reintentando...');
+      reconnectWithBackoff();
+    }
   });
 
   ws.on('error', (err) => {
@@ -86,7 +97,7 @@ function markAsConfirmed(id) {
 function trySendNext() {
   const batch = getNextPending();
 
-  if (!batch || ws.readyState !== WebSocket.OPEN) return;
+  if (!batch || ws?.readyState !== WebSocket.OPEN) return;
 
   ws.send(JSON.stringify({
     id: batch.id,
@@ -101,17 +112,21 @@ function trySendNext() {
 function start() {
   connectWebSocket();
 
-  // Cada X segundos, simulamos llegada de datos y los metemos en la cola
-  setInterval(() => {
+  dataIntervalId = setInterval(() => {
     const batch = generateDataBatch();
     enqueue(batch);
     console.log(`[+] Nuevo batch ${batch.id} en cola`);
-  }, 1000); // cada 1s
+  }, 1000);
 
-  // Intentamos enviar cada 0.5 segundos
-  setInterval(() => {
+  sendIntervalId = setInterval(() => {
     trySendNext();
   }, 500);
+}
+
+function stop() {
+  clearInterval(dataIntervalId);
+  clearInterval(sendIntervalId);
+  stopWebSocket();
 }
 
 module.exports = {
@@ -119,5 +134,6 @@ module.exports = {
   enqueue,
   markAsConfirmed,
   getNextPending,
-  start
+  start,
+  stop
 };

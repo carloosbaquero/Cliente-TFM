@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '.env.test' });
 const { generateDataBatch, enqueue, markAsConfirmed, getNextPending } = require('../index.js');
 const db = require('../db.js');
 
@@ -7,6 +8,7 @@ describe('Unit tests', () => {
   });
 
   afterAll(() => {
+    db.exec('DELETE FROM queue;');
     db.close();
   });
 
