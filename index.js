@@ -2,9 +2,13 @@ const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 const db = require('./db.js');
 
+const fs = require('fs');
+
+const ca = fs.readFileSync('./ca.crt');
+
 const envFile = process.env.NODE_ENV === 'TEST' 
   ? '.env.test' 
-  : '.env.development';
+  : '.env.production';
 require('dotenv').config({path: envFile});
 
 let ws;
@@ -23,7 +27,9 @@ function stopWebSocket() {
 
 // Función para conectar al WebSocket con backoff exponencial
 function connectWebSocket() {
-  ws = new WebSocket(process.env.WS);
+  ws = new WebSocket(process.env.WS, {
+  ca: ca
+});
 
   ws.on('open', () => {
     console.log('[WS] Conectado al backend');
@@ -46,7 +52,7 @@ function connectWebSocket() {
   });
 
   ws.on('error', (err) => {
-    // console.error('[WS] Error:', err.message);
+    console.error('[WS] Error:', err);
     // reconnectWithBackoff();
   });
 }
